@@ -1,4 +1,4 @@
-# job-scheduling
+# Job Scheduling project
 
     Author:     Roger Lei  
     Created:    04/12/2019  

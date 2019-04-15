@@ -57,20 +57,16 @@ class ExactSolution:
         self.pack_jobs(0, self.jobs_sorted)
 
     def pack_jobs(self, i, all_jobs):
-        # early return if the packing is already higher than the current optimal height
-        if i is not 0:
+        # Have packed all the jobs.
+        if i is len(all_jobs):
             highest_job = max(
-                all_jobs[:i],
+                all_jobs,
                 key=lambda job: job['y'] + job['height'])
             overall_height = highest_job['y'] + highest_job['height']
-            if overall_height >= self.optimal_height:
-                return
-
-            # Have packed all the jobs.
-            if i is len(all_jobs):
+            if overall_height < self.optimal_height:
                 self.optimal_height = overall_height
                 self.optimal_jobs = copy.deepcopy(all_jobs)
-                return
+            return
 
         # in_jobs could be empty [] when i is 0
         in_jobs = all_jobs[:i]
@@ -179,7 +175,7 @@ total_time_1 = 0
 total_time_2 = 0
 for i in range(100):
     start_time_1 = time.time()
-    solution.gen_uniform_jobs(12, res_low=1, res_high=1, time_low=1, time_high=5)
+    solution.gen_uniform_jobs(10, res_low=1, res_high=4, time_low=1, time_high=5)
     start_time_2 = time.time()
     solution.run_model()
     elapsed_time_1 = time.time() - start_time_1

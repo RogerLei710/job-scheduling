@@ -57,21 +57,6 @@ class ExactSolution:
         self.pack_jobs(0, self.jobs_sorted)
 
     def pack_jobs(self, i, all_jobs):
-        # early return if the packing is already higher than the current optimal height
-        if i is not 0:
-            highest_job = max(
-                all_jobs[:i],
-                key=lambda job: job['y'] + job['height'])
-            overall_height = highest_job['y'] + highest_job['height']
-            if overall_height >= self.optimal_height:
-                return
-
-            # Have packed all the jobs.
-            if i is len(all_jobs):
-                self.optimal_height = overall_height
-                self.optimal_jobs = copy.deepcopy(all_jobs)
-                return
-
         # in_jobs could be empty [] when i is 0
         in_jobs = all_jobs[:i]
         # out_jobs could be empty [] when i is len-1
@@ -84,6 +69,33 @@ class ExactSolution:
         # sort jobs in the bin and get corner points
         jobs_ordered_yx = self.sort_in_jobs(in_jobs)
         corners = self.two_dim_corners(jobs_ordered_yx, out_min_width)
+
+        if i is not 0:
+            # early return if the packing is already higher than the current optimal height
+            highest_job = max(
+                all_jobs[:i],
+                key=lambda job: job['y'] + job['height'])
+            overall_height = highest_job['y'] + highest_job['height']
+            if overall_height >= self.optimal_height:
+                return
+            # early return if the packing area + left area is greater than the current optimal height * W
+            area_left = 0
+            # calculate packed area by corners
+            area_packed = 0
+            for j in range(1, len(corners)):
+                area_packed += (corners[j][0] - corners[j-1][0]) * corners[j-1][1]
+            for j in range(i, len(all_jobs)):
+                sj = all_jobs[j]['width'] * all_jobs[j]['height']
+                area_left += sj
+            if area_packed + area_left >= self.W * self.optimal_height:
+                return
+
+            # Have packed all the jobs.
+            if i is len(all_jobs):
+                self.optimal_height = overall_height
+                self.optimal_jobs = copy.deepcopy(all_jobs)
+                return
+
         # try corner points recursively and obey depth first rule
         for corner in corners:
             if corner[0] + all_jobs[i]['width'] <= self.W:
@@ -166,7 +178,7 @@ class ExactSolution:
 
 
 solution = ExactSolution(W=8)
-# solution.gen_uniform_jobs(10, res_low=1, res_high=1, time_low=1, time_high=5)
+# solution.gen_uniform_jobs(10, res_low=1, res_high=4, time_low=1, time_high=5)
 
 # solution.jobs.append({'x': 0, 'y': 0, 'width': 2, 'height': 2})
 # solution.jobs.append({'x': 0, 'y': 0, 'width': 1, 'height': 1})
@@ -174,12 +186,12 @@ solution = ExactSolution(W=8)
 # solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 1})
 # solution.volume_sort()
 
-# height early stop
+# height + area early stop
 total_time_1 = 0
 total_time_2 = 0
 for i in range(100):
     start_time_1 = time.time()
-    solution.gen_uniform_jobs(12, res_low=1, res_high=1, time_low=1, time_high=5)
+    solution.gen_uniform_jobs(12, res_low=1, res_high=4, time_low=1, time_high=5)
     start_time_2 = time.time()
     solution.run_model()
     elapsed_time_1 = time.time() - start_time_1

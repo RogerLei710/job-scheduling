@@ -166,30 +166,30 @@ class ExactSolution:
 
 
 solution = ExactSolution(W=8)
-# solution.gen_uniform_jobs(10, res_low=1, res_high=1, time_low=1, time_high=5)
+# solution.gen_uniform_jobs(20, res_low=1, res_high=1, time_low=1, time_high=10)
 
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 2, 'height': 2})
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 1, 'height': 1})
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 3})
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 1})
-# solution.volume_sort()
+solution.jobs.append({'x': 0, 'y': 0, 'width': 2, 'height': 2})
+solution.jobs.append({'x': 0, 'y': 0, 'width': 1, 'height': 1})
+solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 3})
+solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 1})
+solution.volume_sort()
 
-# height early stop
-total_time_1 = 0
-total_time_2 = 0
-for i in range(100):
-    start_time_1 = time.time()
-    solution.gen_uniform_jobs(12, res_low=1, res_high=1, time_low=1, time_high=5)
-    start_time_2 = time.time()
-    solution.run_model()
-    elapsed_time_1 = time.time() - start_time_1
-    elapsed_time_2 = time.time() - start_time_2
-    total_time_1 += elapsed_time_1
-    total_time_2 += elapsed_time_2
-print(total_time_1)
-print(total_time_2)
+# # height early stop
+# total_time_1 = 0
+# total_time_2 = 0
+# for i in range(100):
+#     start_time_1 = time.time()
+#     solution.gen_uniform_jobs(20, res_low=1, res_high=1, time_low=1, time_high=10)
+#     start_time_2 = time.time()
+#     solution.run_model()
+#     elapsed_time_1 = time.time() - start_time_1
+#     elapsed_time_2 = time.time() - start_time_2
+#     total_time_1 += elapsed_time_1
+#     total_time_2 += elapsed_time_2
+# print(total_time_1)
+# print(total_time_2)
 
-# solution.run_model()
-# solution.print_jobs()
-# solution.print_solution()
-# solution.draw_solution()
+solution.run_model()
+solution.print_jobs()
+solution.print_solution()
+solution.draw_solution()

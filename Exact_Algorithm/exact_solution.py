@@ -56,6 +56,55 @@ class ExactSolution:
         self.pack_jobs(0, self.jobs)
         self.solve_time = time.time() - start_time
 
+    def synthetic_model(self):
+        # Sort jobs several times according to different aspects
+        self.optimal_height = float('inf')
+        start_time = time.time()
+
+        # Sort jobs according to non-increasing height then width.
+        self.jobs_sorted = sorted(
+            self.jobs,
+            key=lambda job: (job['height'], job['width']),
+            reverse=True)
+        self.pack_jobs(0, self.jobs_sorted)
+
+        # Sort jobs according to non-increasing height then width.
+        self.jobs_sorted = sorted(
+            self.jobs,
+            key=lambda job: (job['width'], job['height']),
+            reverse=True)
+        self.pack_jobs(0, self.jobs_sorted)
+
+        self.solve_time = time.time() - start_time
+
+    def synthetic_1_model(self):
+        # Sort jobs several times according to different aspects
+        self.optimal_height = float('inf')
+        start_time = time.time()
+        # Sort jobs according to non-increasing height.
+        self.jobs_sorted = sorted(self.jobs, key=lambda job: job['height'], reverse=True)
+        self.pack_jobs(0, self.jobs_sorted)
+
+        # Sort jobs according to non-increasing height then width.
+        self.jobs_sorted = sorted(
+            self.jobs,
+            key=lambda job: (job['height'], job['width']),
+            reverse=True)
+        self.pack_jobs(0, self.jobs_sorted)
+
+        # Sort jobs according to non-increasing width.
+        self.jobs_sorted = sorted(self.jobs, key=lambda job: job['width'], reverse=True)
+        self.pack_jobs(0, self.jobs_sorted)
+
+        # Sort jobs according to non-increasing height then width.
+        self.jobs_sorted = sorted(
+            self.jobs,
+            key=lambda job: (job['width'], job['height']),
+            reverse=True)
+        self.pack_jobs(0, self.jobs_sorted)
+
+        self.solve_time = time.time() - start_time
+
     def height_first_model(self):
         self.optimal_height = float('inf')
         start_time = time.time()
@@ -270,13 +319,15 @@ def compare_models(W, num, res_low, res_high, time_low, time_high, iter):
     AH_time = AH_height = 0
     AW_time = AW_height = 0
     RWH_time = RWH_height = 0
+    syn_time = syn_height = 0
+    syn1_time = syn1_height = 0
 
     for i in range(iter):
         solution.gen_uniform_jobs(num, res_low, res_high, time_low, time_high)
 
-        # solution.exact_model()
-        # exact_time += solution.solve_time
-        # exact_height += solution.optimal_height
+        solution.exact_model()
+        exact_time += solution.solve_time
+        exact_height += solution.optimal_height
 
         # solution.random_model()
         # random_time += solution.solve_time
@@ -310,15 +361,23 @@ def compare_models(W, num, res_low, res_high, time_low, time_high, iter):
         # AW_time += solution.solve_time
         # AW_height += solution.optimal_height
 
-        solution.reverse_width_height_model()
-        RWH_time += solution.solve_time
-        RWH_height += solution.optimal_height
+        # solution.reverse_width_height_model()
+        # RWH_time += solution.solve_time
+        # RWH_height += solution.optimal_height
+
+        solution.synthetic_model()
+        syn_time += solution.solve_time
+        syn_height += solution.optimal_height
+
+        solution.synthetic_1_model()
+        syn1_time += solution.solve_time
+        syn1_height += solution.optimal_height
 
     print('Maximum resource: {}. Number of jobs: {}. Times of iteration: {}.'.format(W, num, iter))
     print('Resource low bound: {}. Resource high bound: {}.'.format(res_low, res_high))
     print('Time low bound: {}. Time high bound: {}.\n'.format(time_low, time_high))
 
-    # print('Exact solution took {0:.5f}s. Sum of optimal heights is {1}'.format(exact_time, exact_height))
+    print('Exact solution took {0:.5f}s. Sum of optimal heights is {1}'.format(exact_time, exact_height))
     # print('Random solution took {0:.5f}s. Sum of heights is {1}'.format(random_time, random_height))
     # print('Height First solution took {0:.5f}s. Sum of heights is {1}'.format(HF_time, HF_height))
     # print('Height then Width solution took {0:.5f}s. Sum of heights is {1}'.format(HW_time, HW_height))
@@ -327,7 +386,10 @@ def compare_models(W, num, res_low, res_high, time_low, time_high, iter):
     # print('Area First solution took {0:.5f}s. Sum of heights is {1}'.format(AF_time, AF_height))
     # print('Area then Height solution took {0:.5f}s. Sum of heights is {1}'.format(AH_time, AH_height))
     # print('Area then Width solution took {0:.5f}s. Sum of heights is {1}'.format(AW_time, AW_height))
-    print('Reverse Width then Height solution took {0:.5f}s. Sum of heights is {1}'.format(RWH_time, RWH_height))
+
+    # print('Reverse Width then Height solution took {0:.5f}s. Sum of heights is {1}'.format(RWH_time, RWH_height))
+    print('Synthetic solution took {0:.5f}s. Sum of heights is {1}'.format(syn_time, syn_height))
+    print('Synthetic 1 solution took {0:.5f}s. Sum of heights is {1}'.format(syn1_time, syn1_height))
 
 
-compare_models(W=8, num=10, res_low=1, res_high=4, time_low=1, time_high=10, iter=10000)
+compare_models(W=8, num=5, res_low=1, res_high=4, time_low=1, time_high=10, iter=10000)

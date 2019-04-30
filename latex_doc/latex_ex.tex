@@ -1,0 +1,67 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[a4paper,inner=2cm,outer=2cm,top=2cm,
+bottom=2cm]{geometry}
+\usepackage[english]{babel}
+\usepackage{blindtext}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{index}
+\makeindex
+\let\cleardoublepage\clearpage
+
+\begin{document}
+\title{\Large{\textbf{Job Scheduling}}}
+\author{By Roger Lei}
+\date{May 01, 2019}
+\maketitle
+
+\tableofcontents
+
+\chapter{Chapter Name}
+\blindmathtrue
+\blindtext
+\blinditemize
+\blindenumerate
+\blinddescription
+
+\section*{No Wrap Image}
+
+\begin{figure}[ht]
+\blindtext
+\centering
+\includegraphics[width=8cm]{/home/testrail/图片/git_flow.png}
+\end{figure}
+\blindtext
+
+\section*{Wrap Image}
+\begingroup
+\setlength{\intextsep}{0pt}
+\setlength{\columnwidth}{15pt}
+
+\begin{wrapfigure}{r}{0.4\textwidth}
+
+\includegraphics[width=\linewidth]{/home/testrail/图片/git_flow.png}
+\caption{Pretty git flow}\label{fig:prettypic}
+\end{wrapfigure}
+\blindtext
+
+\endgroup
+
+\section{First Section}
+\blindtext[1]
+\blinditemize
+\blindenumerate
+\blinddescription
+
+\section{Second Section}
+\blindtext[2]
+\newpage
+
+\section{Third Section}
+
+
+
+\end{document}

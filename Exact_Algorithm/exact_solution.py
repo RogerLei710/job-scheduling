@@ -1,9 +1,9 @@
-import random
 import pprint
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import copy
 import time
+import numpy as np
 from itertools import permutations
 
 
@@ -33,11 +33,68 @@ class ExactSolution:
         :return: None
         """
         self.jobs = []
-        for i in range(num):
+        w_arr = np.random.random_integers(low=res_low, high=res_high, size=num)
+        h_arr = np.random.random_integers(low=time_low, high=time_high, size=num)
+        for width,height in zip(w_arr, h_arr):
             job = {'x': 0, 'y': 0}
-            job['width'] = random.randrange(res_low, res_high + 1)
-            job['height'] = random.randrange(time_low, time_high)
+            job['width'] = width
+            job['height'] = height
             self.jobs.append(job)
+
+    def gen_binomial_jobs(self, num, res_low, res_high, time_low, time_high):
+        """
+        Generate uniform jobs according to four parameters, and save them into self.jobs
+        :param num: The number of jobs waited to schedule.
+        :param res_low: The smallest amount of resource that a job may request.
+        :param res_high: The biggest amount of resource that a job may request.
+        :param time_low: The smallest amount of time that a job may request.
+        :param time_high: The biggest amount of time that a job may request.
+        :return: None
+        """
+        self.jobs = []
+        q1 = (res_high+1) / (2*res_high)
+        q2 = (time_high+1) / (2*time_high)
+        # in case of too many 0, get 3 times size of arrays
+        w_arr = np.random.binomial(n=res_high, p=q1, size=3*num)
+        h_arr = np.random.binomial(n=time_high, p=q2, size=3*num)
+        size = 0
+        for width, height in zip(w_arr, h_arr):
+            if size is num:
+                break
+
+            if width is not 0 and height is not 0:
+                size += 1
+                job = {'x': 0, 'y': 0}
+                job['width'] = width
+                job['height'] = height
+                self.jobs.append(job)
+
+    def gen_geometric_jobs(self, num, res_low, res_high, time_low, time_high):
+        """
+        Generate uniform jobs according to four parameters, and save them into self.jobs
+        :param num: The number of jobs waited to schedule.
+        :param res_low: The smallest amount of resource that a job may request.
+        :param res_high: The biggest amount of resource that a job may request.
+        :param time_low: The smallest amount of time that a job may request.
+        :param time_high: The biggest amount of time that a job may request.
+        :return: None
+        """
+        self.jobs = []
+        q1 = 2 / (res_high+1)
+        q2 = 2 / (time_high+1)
+        # in case of too many 0, get 3 times size of arrays
+        w_arr = np.random.geometric(p=q1, size=3*num)
+        h_arr = np.random.geometric(p=q2, size=3*num)
+        size = 0
+        for width, height in zip(w_arr, h_arr):
+            if size is num:
+                break
+            if width is not 0 and width <= res_high and height is not 0 and height <= time_high:
+                size += 1
+                job = {'x': 0, 'y': 0}
+                job['width'] = width
+                job['height'] = height
+                self.jobs.append(job)
 
     def exact_model(self):
         self.optimal_height = float('inf')
@@ -292,18 +349,20 @@ class ExactSolution:
         plt.show()
 
 
-# solution = ExactSolution(W=8)
-# solution.gen_uniform_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
+solution = ExactSolution(W=8)
+solution.gen_uniform_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
+solution.gen_binomial_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
+solution.gen_geometric_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
 
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 2, 'height': 2})
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 1, 'height': 1})
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 3})
-# solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 1})
+solution.jobs.append({'x': 0, 'y': 0, 'width': 2, 'height': 2})
+solution.jobs.append({'x': 0, 'y': 0, 'width': 1, 'height': 1})
+solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 3})
+solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 1})
 
-# solution.exact_model()
-# solution.print_jobs()
-# solution.print_solution()
-# solution.draw_solution()
+solution.height_first_model()
+solution.print_jobs()
+solution.print_solution()
+solution.draw_solution()
 
 
 def compare_models(W, num, res_low, res_high, time_low, time_high, iter):

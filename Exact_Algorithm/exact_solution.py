@@ -11,11 +11,12 @@ class ExactSolution:
     """
     Build branch and bound algorithm to optimally solve two dimensional strip packing problem
     """
-    def __init__(self, W):
+    def __init__(self, W, rotation):
         """
         :param W: Specify the maximum amount of resource
         """
         self.W = W
+        self.rotation = rotation
         self.jobs = []
         self.jobs_sorted = []
         self.optimal_height = float('inf')
@@ -62,12 +63,13 @@ class ExactSolution:
             if size is num:
                 break
 
-            if width is not 0 and height is not 0:
+            if width != 0 and height != 0:
                 size += 1
                 job = {'x': 0, 'y': 0}
                 job['width'] = width
                 job['height'] = height
                 self.jobs.append(job)
+        pass
 
     def gen_geometric_jobs(self, num, res_low, res_high, time_low, time_high):
         """
@@ -89,7 +91,7 @@ class ExactSolution:
         for width, height in zip(w_arr, h_arr):
             if size is num:
                 break
-            if width is not 0 and width <= res_high and height is not 0 and height <= time_high:
+            if width != 0 and width <= res_high and height != 0 and height <= time_high:
                 size += 1
                 job = {'x': 0, 'y': 0}
                 job['width'] = width
@@ -265,14 +267,23 @@ class ExactSolution:
             out_min_width = min(out_jobs, key=lambda job: job['width'])['width']
         else:
             out_min_width = 0
-        # sort jobs in the bin and get corner points
-        jobs_ordered_yx = self.sort_in_jobs(in_jobs)
-        corners = self.two_dim_corners(jobs_ordered_yx, out_min_width)
+        # get corner points
+        # jobs_ordered_yx = self.sort_in_jobs(in_jobs)
+        corners = self.two_dim_corners(in_jobs, out_min_width)
         # try corner points recursively and obey depth first rule
         for corner in corners:
             if corner[0] + all_jobs[i]['width'] <= self.W:
                 all_jobs[i]['x'] = corner[0]
                 all_jobs[i]['y'] = corner[1]
+                # try to pack the next job, call itself recursively
+                self.pack_jobs(i + 1, all_jobs)
+            # if rotation is True, try to place the rotated rectangle
+            if self.rotation is True and corner[0] + all_jobs[i]['height'] <= self.W:
+                all_jobs[i]['x'] = corner[0]
+                all_jobs[i]['y'] = corner[1]
+                t_width = all_jobs[i]['width']
+                all_jobs[i]['width'] = all_jobs[i]['height']
+                all_jobs[i]['height'] = t_width
                 # try to pack the next job, call itself recursively
                 self.pack_jobs(i + 1, all_jobs)
 
@@ -288,15 +299,18 @@ class ExactSolution:
             corners = [(0, 0)]
             return corners
 
+        # sort jobs in the bin
+        ordered_in_jobs = self.sort_in_jobs(in_jobs)
+
         # Phrase 1: identify the extreme items, e0, e1, ..., em-1
         ex_jobs = []
         x_max = m = 0
-        for j in range(len(in_jobs)):
+        for j in range(len(ordered_in_jobs)):
             # j = 0, 1, ...., l-1
-            if in_jobs[j]['x'] + in_jobs[j]['width'] > x_max:
+            if ordered_in_jobs[j]['x'] + ordered_in_jobs[j]['width'] > x_max:
                 m = m + 1
-                x_max = in_jobs[j]['x'] + in_jobs[j]['width']
-                ex_jobs.append(in_jobs[j])
+                x_max = ordered_in_jobs[j]['x'] + ordered_in_jobs[j]['width']
+                ex_jobs.append(ordered_in_jobs[j])
         # Phrase 2: determine the corner points
         corners = [(0, ex_jobs[0]['y'] + ex_jobs[0]['height'])]
         for j in range(1, m):
@@ -349,106 +363,122 @@ class ExactSolution:
         plt.show()
 
 
-solution = ExactSolution(W=8)
-solution.gen_uniform_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
-solution.gen_binomial_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
-solution.gen_geometric_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
-
-solution.jobs.append({'x': 0, 'y': 0, 'width': 2, 'height': 2})
-solution.jobs.append({'x': 0, 'y': 0, 'width': 1, 'height': 1})
-solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 3})
-solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 1})
-
-solution.height_first_model()
-solution.print_jobs()
-solution.print_solution()
-solution.draw_solution()
-
-
-def compare_models(W, num, res_low, res_high, time_low, time_high, iter):
-    solution = ExactSolution(W=W)
-    # height early stop
-    exact_time = exact_height = 0
-    random_time = random_height = 0
-    HF_time = HF_height = 0
-    HW_time = HW_height = 0
-    WF_time = WF_height = 0
-    WH_time = WH_height = 0
-    AF_time = AF_height = 0
-    AH_time = AH_height = 0
-    AW_time = AW_height = 0
-    RWH_time = RWH_height = 0
-    syn_time = syn_height = 0
-    syn1_time = syn1_height = 0
-
-    for i in range(iter):
-        solution.gen_uniform_jobs(num, res_low, res_high, time_low, time_high)
-
-        solution.exact_model()
-        exact_time += solution.solve_time
-        exact_height += solution.optimal_height
-
-        # solution.random_model()
-        # random_time += solution.solve_time
-        # random_height += solution.optimal_height
-
-        # solution.height_first_model()
-        # HF_time += solution.solve_time
-        # HF_height += solution.optimal_height
-        #
-        # solution.height_width_model()
-        # HW_time += solution.solve_time
-        # HW_height += solution.optimal_height
-        #
-        # solution.width_first_model()
-        # WF_time += solution.solve_time
-        # WF_height += solution.optimal_height
-
-        solution.width_height_model()
-        WH_time += solution.solve_time
-        WH_height += solution.optimal_height
-
-        # solution.area_first_model()
-        # AF_time += solution.solve_time
-        # AF_height += solution.optimal_height
-        #
-        # solution.area_height_model()
-        # AH_time += solution.solve_time
-        # AH_height += solution.optimal_height
-        #
-        # solution.area_width_model()
-        # AW_time += solution.solve_time
-        # AW_height += solution.optimal_height
-
-        # solution.reverse_width_height_model()
-        # RWH_time += solution.solve_time
-        # RWH_height += solution.optimal_height
-
-        solution.synthetic_model()
-        syn_time += solution.solve_time
-        syn_height += solution.optimal_height
-
-        solution.synthetic_1_model()
-        syn1_time += solution.solve_time
-        syn1_height += solution.optimal_height
-
-    print('Maximum resource: {}. Number of jobs: {}. Times of iteration: {}.'.format(W, num, iter))
-    print('Resource low bound: {}. Resource high bound: {}.'.format(res_low, res_high))
-    print('Time low bound: {}. Time high bound: {}.\n'.format(time_low, time_high))
-
-    print('Exact solution took {0:.5f}s. Sum of optimal heights is {1}'.format(exact_time, exact_height))
-    # print('Random solution took {0:.5f}s. Sum of heights is {1}'.format(random_time, random_height))
-    # print('Height First solution took {0:.5f}s. Sum of heights is {1}'.format(HF_time, HF_height))
-    # print('Height then Width solution took {0:.5f}s. Sum of heights is {1}'.format(HW_time, HW_height))
-    # print('Width First solution took {0:.5f}s. Sum of heights is {1}'.format(WF_time, WF_height))
-    print('Width then Height solution took {0:.5f}s. Sum of heights is {1}'.format(WH_time, WH_height))
-    # print('Area First solution took {0:.5f}s. Sum of heights is {1}'.format(AF_time, AF_height))
-    # print('Area then Height solution took {0:.5f}s. Sum of heights is {1}'.format(AH_time, AH_height))
-    # print('Area then Width solution took {0:.5f}s. Sum of heights is {1}'.format(AW_time, AW_height))
-
-    # print('Reverse Width then Height solution took {0:.5f}s. Sum of heights is {1}'.format(RWH_time, RWH_height))
-    print('Synthetic solution took {0:.5f}s. Sum of heights is {1}'.format(syn_time, syn_height))
-    print('Synthetic 1 solution took {0:.5f}s. Sum of heights is {1}'.format(syn1_time, syn1_height))
+# solution = ExactSolution(W=8, rotation=True)
+# solution.gen_uniform_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
+# solution.gen_binomial_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
+# solution.gen_geometric_jobs(8, res_low=1, res_high=4, time_low=1, time_high=5)
+#
+# # solution.jobs.append({'x': 0, 'y': 0, 'width': 2, 'height': 2})
+# # solution.jobs.append({'x': 0, 'y': 0, 'width': 1, 'height': 1})
+# # solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 3})
+# # solution.jobs.append({'x': 0, 'y': 0, 'width': 4, 'height': 1})
+#
+# solution.height_first_model()
+# solution.print_jobs()
+# solution.print_solution()
+# solution.draw_solution()
 
 
-compare_models(W=8, num=5, res_low=1, res_high=4, time_low=1, time_high=10, iter=10000)
+def compare_models(W, res_low, res_high, time_low, time_high, iter, rotation):
+    solution = ExactSolution(W=W, rotation=rotation)
+
+    # save results to txt
+    f = open("results.txt", "a")
+    # f.write(string) write a string into the file and return its number of bytes
+    f.write('n HW time WH time AH time AW time RL time Syn1 time Syn2 time\n')
+
+    for num in range(3, 21):
+        # height early stop
+        exact_time = exact_height = 0
+        random_time = random_height = 0
+        HF_time = HF_height = 0
+        HW_time = HW_height = 0
+        WF_time = WF_height = 0
+        WH_time = WH_height = 0
+        AF_time = AF_height = 0
+        AH_time = AH_height = 0
+        AW_time = AW_height = 0
+        RWH_time = RWH_height = 0
+        syn_time = syn_height = 0
+        syn1_time = syn1_height = 0
+        for i in range(iter):
+            solution.gen_uniform_jobs(num, res_low, res_high, time_low, time_high)
+            # solution.gen_binomial_jobs(num, res_low, res_high, time_low, time_high)
+            # solution.gen_geometric_jobs(num, res_low, res_high, time_low, time_high)
+
+            # solution.exact_model()
+            # exact_time += solution.solve_time
+            # exact_height += solution.optimal_height
+
+            solution.random_model()
+            random_time += solution.solve_time
+            random_height += solution.optimal_height
+
+            # solution.height_first_model()
+            # HF_time += solution.solve_time
+            # HF_height += solution.optimal_height
+
+            solution.height_width_model()
+            HW_time += solution.solve_time
+            HW_height += solution.optimal_height
+
+            # solution.width_first_model()
+            # WF_time += solution.solve_time
+            # WF_height += solution.optimal_height
+
+            solution.width_height_model()
+            WH_time += solution.solve_time
+            WH_height += solution.optimal_height
+
+            # solution.area_first_model()
+            # AF_time += solution.solve_time
+            # AF_height += solution.optimal_height
+
+            solution.area_height_model()
+            AH_time += solution.solve_time
+            AH_height += solution.optimal_height
+
+            solution.area_width_model()
+            AW_time += solution.solve_time
+            AW_height += solution.optimal_height
+
+            # solution.reverse_width_height_model()
+            # RWH_time += solution.solve_time
+            # RWH_height += solution.optimal_height
+
+            solution.synthetic_model()
+            syn_time += solution.solve_time
+            syn_height += solution.optimal_height
+
+            solution.synthetic_1_model()
+            syn1_time += solution.solve_time
+            syn1_height += solution.optimal_height
+
+        print('Maximum resource: {}. Number of jobs: {}. Times of iteration: {}.'.format(W, num, iter))
+        print('Resource low bound: {}. Resource high bound: {}.'.format(res_low, res_high))
+        print('Time low bound: {}. Time high bound: {}.\n'.format(time_low, time_high))
+
+        # print('Exact solution took {0:.5f}s. Sum of optimal heights is {1}'.format(exact_time, exact_height))
+        print('Random solution took {0:.5f}s. Sum of heights is {1}'.format(random_time, random_height))
+        # print('Height First solution took {0:.5f}s. Sum of heights is {1}'.format(HF_time, HF_height))
+        print('Height then Width solution took {0:.5f}s. Sum of heights is {1}'.format(HW_time, HW_height))
+        # print('Width First solution took {0:.5f}s. Sum of heights is {1}'.format(WF_time, WF_height))
+        print('Width then Height solution took {0:.5f}s. Sum of heights is {1}'.format(WH_time, WH_height))
+        # print('Area First solution took {0:.5f}s. Sum of heights is {1}'.format(AF_time, AF_height))
+        print('Area then Height solution took {0:.5f}s. Sum of heights is {1}'.format(AH_time, AH_height))
+        print('Area then Width solution took {0:.5f}s. Sum of heights is {1}'.format(AW_time, AW_height))
+
+        # print('Reverse Width then Height solution took {0:.5f}s. Sum of heights is {1}'.format(RWH_time, RWH_height))
+        print('Synthetic solution took {0:.5f}s. Sum of heights is {1}'.format(syn_time, syn_height))
+        print('Synthetic 1 solution took {0:.5f}s. Sum of heights is {1}'.format(syn1_time, syn1_height))
+
+        line = "{0:.5f} {1:.5f} {2:.5f} {3:.5f} {4:.5f} {5:.5f} {6:.5f} {7:.5f} {8:.5f} {9:.5f} {10:.5f} {11:.5f} {12:.5f} {13:.5f} {14:.5f}\n".format(
+            num, HW_height, HW_time, WH_height, WH_time, AH_height, AH_time,
+            AW_height, AW_time, random_height, random_time, syn_height, syn_time, syn1_height, syn1_time)
+        f.write(line)
+
+    # remember to close the file object
+    f.close()
+
+
+compare_models(W=8, res_low=1, res_high=4, time_low=1, time_high=10, iter=100, rotation=False)

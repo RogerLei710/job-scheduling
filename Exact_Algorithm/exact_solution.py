@@ -4,6 +4,7 @@ from matplotlib.patches import Rectangle
 import copy
 import time
 import numpy as np
+import math
 from itertools import permutations
 
 
@@ -339,6 +340,35 @@ class ExactSolution:
 
         return jobs_ordered_yx
 
+    def continuous_bound(self):
+        area = 0
+        for job in self.jobs:
+            area += job['width'] * job['height']
+        return math.ceil(area / self.W)
+
+    def first_bound(self):
+        # iterate through 1 to w/2, to find the max first bound
+        first_bound = 0
+        for a in range(1, math.floor(self.W/2 + 1)):
+            t_bound = 0
+            first_term, sec_term = 0, 0
+            for job in self.jobs:
+                # J1={j∈J:w_j>W-α}
+                if job['width'] > self.W - a:
+                    t_bound += job['height']
+                # J2={j∈J:W-α≥w_j>W/2}
+                elif self.W/2 < job['width'] <= self.W -a:
+                    t_bound += job['height']
+                    sec_term += (self.W - job['width']) * job['height']
+                # J3={j∈J:W/2≥w_j≥α}
+                elif a <= job['width'] <= self.W/2:
+                    first_term += job['width']*job['height']
+            if first_term > sec_term:
+                t_bound += math.ceil( (first_term-sec_term) / self.W)
+            if t_bound > first_bound:
+                first_bound = t_bound
+        return first_bound
+
     def print_jobs(self):
         print('Generated jobs are: ')
         pp = pprint.PrettyPrinter(width=80)
@@ -383,36 +413,41 @@ def compare_models(W, res_low, res_high, time_low, time_high, iter, rotation):
     solution = ExactSolution(W=W, rotation=rotation)
 
     # save results to txt
-    f = open("results.txt", "a")
+    f = open("results.txt", "w")
     # f.write(string) write a string into the file and return its number of bytes
-    f.write('n HW time WH time AH time AW time RL time Syn1 time Syn2 time\n')
+    f.write('n con_bound first_bound exact time HW time WH time AH time AW time RL time Syn1 time Syn2 time\n')
 
-    for num in range(3, 21):
+    for num in range(1, 21):
         # height early stop
-        exact_time = exact_height = 0
-        random_time = random_height = 0
-        HF_time = HF_height = 0
-        HW_time = HW_height = 0
-        WF_time = WF_height = 0
-        WH_time = WH_height = 0
-        AF_time = AF_height = 0
-        AH_time = AH_height = 0
-        AW_time = AW_height = 0
-        RWH_time = RWH_height = 0
-        syn_time = syn_height = 0
-        syn1_time = syn1_height = 0
+        exact_time, exact_height = 0, 0
+        random_time, random_height = 0, 0
+        HF_time, HF_height = 0, 0
+        HW_time, HW_height = 0, 0
+        WF_time, WF_height = 0, 0
+        WH_time, WH_height = 0, 0
+        AF_time, AF_height = 0, 0
+        AH_time, AH_height = 0, 0
+        AW_time, AW_height = 0, 0
+        RWH_time, RWH_height = 0, 0
+        syn_time, syn_height = 0, 0
+        syn1_time, syn1_height = 0, 0
+        con_bound, first_bound = 0, 0
         for i in range(iter):
-            solution.gen_uniform_jobs(num, res_low, res_high, time_low, time_high)
+            # solution.gen_uniform_jobs(num, res_low, res_high, time_low, time_high)
             # solution.gen_binomial_jobs(num, res_low, res_high, time_low, time_high)
-            # solution.gen_geometric_jobs(num, res_low, res_high, time_low, time_high)
+            solution.gen_geometric_jobs(num, res_low, res_high, time_low, time_high)
 
-            # solution.exact_model()
-            # exact_time += solution.solve_time
-            # exact_height += solution.optimal_height
+            con_bound += solution.continuous_bound()
+            first_bound += solution.first_bound()
 
-            solution.random_model()
-            random_time += solution.solve_time
-            random_height += solution.optimal_height
+            if num < 8:
+                solution.exact_model()
+                exact_time += solution.solve_time
+                exact_height += solution.optimal_height
+            if num < 17:
+                solution.random_model()
+                random_time += solution.solve_time
+                random_height += solution.optimal_height
 
             # solution.height_first_model()
             # HF_time += solution.solve_time
@@ -456,9 +491,11 @@ def compare_models(W, res_low, res_high, time_low, time_high, iter, rotation):
 
         print('Maximum resource: {}. Number of jobs: {}. Times of iteration: {}.'.format(W, num, iter))
         print('Resource low bound: {}. Resource high bound: {}.'.format(res_low, res_high))
-        print('Time low bound: {}. Time high bound: {}.\n'.format(time_low, time_high))
+        print('Time low bound: {}. Time high bound: {}.'.format(time_low, time_high))
 
-        # print('Exact solution took {0:.5f}s. Sum of optimal heights is {1}'.format(exact_time, exact_height))
+        print('Continuous bound is {}.'.format(con_bound))
+        print('First bound is {}.'.format(first_bound))
+        print('Exact solution took {0:.5f}s. Sum of optimal heights is {1}'.format(exact_time, exact_height))
         print('Random solution took {0:.5f}s. Sum of heights is {1}'.format(random_time, random_height))
         # print('Height First solution took {0:.5f}s. Sum of heights is {1}'.format(HF_time, HF_height))
         print('Height then Width solution took {0:.5f}s. Sum of heights is {1}'.format(HW_time, HW_height))
@@ -470,15 +507,17 @@ def compare_models(W, res_low, res_high, time_low, time_high, iter, rotation):
 
         # print('Reverse Width then Height solution took {0:.5f}s. Sum of heights is {1}'.format(RWH_time, RWH_height))
         print('Synthetic solution took {0:.5f}s. Sum of heights is {1}'.format(syn_time, syn_height))
-        print('Synthetic 1 solution took {0:.5f}s. Sum of heights is {1}'.format(syn1_time, syn1_height))
+        print('Synthetic 1 solution took {0:.5f}s. Sum of heights is {1}\n'.format(syn1_time, syn1_height))
 
-        line = "{0:.5f} {1:.5f} {2:.5f} {3:.5f} {4:.5f} {5:.5f} {6:.5f} {7:.5f} {8:.5f} {9:.5f} {10:.5f} {11:.5f} {12:.5f} {13:.5f} {14:.5f}\n".format(
-            num, HW_height, HW_time, WH_height, WH_time, AH_height, AH_time,
-            AW_height, AW_time, random_height, random_time, syn_height, syn_time, syn1_height, syn1_time)
+        line = "{0} {1} {2} {3} {4:.5f} {5} {6:.5f} {7} {8:.5f}" \
+               " {9} {10:.5f} {11} {12:.5f} {13} {14:.5f} {15} {16:.5f} {17} {18:.5f}\n".format(
+            num, con_bound, first_bound, exact_height, exact_time, HW_height, HW_time,
+            WH_height, WH_time, AH_height, AH_time, AW_height, AW_time, random_height,
+            random_time, syn_height, syn_time, syn1_height, syn1_time)
         f.write(line)
 
     # remember to close the file object
     f.close()
 
 
-compare_models(W=8, res_low=1, res_high=4, time_low=1, time_high=10, iter=100, rotation=False)
+compare_models(W=8, res_low=1, res_high=8, time_low=1, time_high=10, iter=100, rotation=False)
